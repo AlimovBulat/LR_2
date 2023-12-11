@@ -1,270 +1,391 @@
-﻿#include <iostream>
-#include <vector>
-#include <fstream>
-#include <string>
+﻿#include "tube.h"
+#include "cs.h"
+#include "OperatorOverloads.h"
+#include "WorkingWithFiles.h"
+#include "Checking.h"
+#include <unordered_set>
 using namespace std;
 
-void print_menu()
+template<typename T>
+void PrintObj(const unordered_map<int, T>& Obj)
 {
-    cout << "1.Добавить трубу" << endl
-        << "2.Добавить КС" << endl
-        << "3.Просмотр объектов" << endl
-        << "4.Редактировать трубу" << endl
-        << "5.Редактировать КС" << endl
-        << "6.Сохранить" << endl
-        << "7.Загрузить" << endl
-        << "0.Выход" << endl
-        << "Введите комманду" << endl;
-}
-
-unsigned int get_pozitive_number(unsigned int min, unsigned int max)
-{
-    unsigned int x;
-    while ((cin >> x).fail() || x < min || x > max)
+    for (const auto& elem : Obj)
     {
-        cin.clear();
-        cin.ignore(10000, '\n');
-        cout << "ошибка, введите подходящее число\n";
+        cout << "ID объекта: " << elem.first << endl;
+        cout << elem.second << endl;
+        cout << endl;
     }
-    return x;
 }
 
-struct tube
+string EnteringFragmentName()
 {
-    double length;
-    double diameter;
-    bool status;
-};
+    string Name = "NoName";
+    cout << "Введите фрагмент названия искомых объектов. " << endl << "Фильтр: ";
+    cin >> ws;
+    getline(cin, Name);
+    return Name;
+}
 
-struct CS
+template<typename T, typename T1>
+void FilterResults(unordered_map<int, T1>& Obj, unordered_map<int, int>& IDs, Filter<T, T1> f, T param)
 {
-    string name;
-    int number_of_shops;
-    int number_of_shops_in_work;
-    double efficiency;
-};
-
-bool is_data_correct(const tube& t)
-{
-    if ((t.length < 0) or (t.diameter < 0) or ((t.status != 0) and (t.status != 1)))
+    int count = 0;
+    for (const auto& elem : Obj)
     {
-        return 0;
-    }
-    else { return 1; }
-}
-bool is_data_correct(const CS& c)
-{
-    if ((c.number_of_shops < 0) or (c.number_of_shops_in_work < 0) or (c.number_of_shops_in_work > c.number_of_shops))
-    {
-        return 0;
-    }
-    else { return 1; }
-}
-
-void edit_tube(tube& t)
-{
-    cout << "Если труба работает, введите 1. Если труба в нерабочем состоянии, введите 0. ";
-    t.status = get_pozitive_number(0, 1);
-}
-
-void save(const tube& t, const CS& c)
-{
-    ofstream file_out;
-    file_out.open("data.txt", ios::out);
-    if (file_out.is_open())
-    {
-        if (is_data_correct(t))
+        if (f(elem.second, param))
         {
-            file_out << "tube" << endl << t.length << endl << t.diameter << endl << t.status << endl;
+            ++count;
+            cout << "Номер в списке: " << count << endl;
+            cout << "ID объекта: " << elem.first << endl << elem.second << endl;
+            IDs.emplace(count, elem.first);
         }
-        if (is_data_correct(c))
-        {
-            file_out << "CS" << endl << c.name << endl << c.number_of_shops << endl << c.number_of_shops_in_work << endl << c.efficiency << endl;
-        }
-        file_out.close();
+    }
+    if (count == 0)
+    {
+        cout << "Искомых объектов не найдено!" << endl;
+        return;
     }
 }
 
-void load(tube& t, CS& c)
+void OutPut(const unordered_map<int, tube>& GroupTube, unordered_map<int, cs>& GroupCS)
 {
-    ifstream file_in;
-    file_in.open("data.txt", ios::in);
-    if (file_in.is_open())
-    {
-        string keyword;
-        file_in >> keyword;
-        if (keyword == "tube")
-        {
-            file_in >> t.length;
-            file_in >> t.diameter;
-            file_in >> t.status;
-            file_in >> keyword;
-        }
-        if (keyword == "CS")
-        {
-            getline(file_in >> ws, c.name);
-            file_in >> c.number_of_shops;
-            file_in >> c.number_of_shops_in_work;
-            file_in >> c.efficiency;
-        }
-        file_in.close();
-    }
-}
+    cout << "1. Вывести информацию по трубам" << endl
+        << "2. Вывести информацию по компрессорным станциям" << endl
+        << "3. Вывести информацию по всем объектам" << endl
+        << "4. Вывести информацию по фильтру название КС" << endl
+        << "5. Вывести информацию по фильтру процента незадействованных цехов КС" << endl;
 
-istream& operator >> (istream& in, tube& p)
-{
-    cout << "Введите длину: ";
-    p.length = get_pozitive_number(0.0000001, 9999999.0);
-    cout << "Введите диаметр: ";
-    p.diameter = get_pozitive_number(0.0000001, 9999999.0);
-    cout << "Если труба работает, введите 1. Если труба в нерабочем состоянии, введите 0. ";
-    p.status = get_pozitive_number(0, 1);
-    return in;
-}
 
-ostream& operator << (ostream& out, const tube& p)
-{
-    out << "Длина = " << p.length << endl
-        << "Диаметр = " << p.diameter << endl
-        << "Состояние работы: ";
-    if (p.status == 0)
-    {
-        out << "Не работает" << endl;
-    }
-    else
-    {
-        out << "Работает" << endl;
-    }
-    return out;
-}
+    int i = CheckingValues(1, 5);
 
-void edit_CS(CS& t)
-{
-    int oper;
-    cout << "+1 для добавления цеха, -1 для убавления " << endl;
-    cin >> oper;
-    switch (oper)
+    switch (i)
     {
-    case -1:
-        if ((t.number_of_shops_in_work - 1) < 0)
-        {
-            cout << "Число цехов в работе не может быть меньше 0" << endl;
-            edit_CS(t);
-        }
-        else { t.number_of_shops_in_work -= 1; }
-        break;
     case 1:
-        if (t.number_of_shops < (t.number_of_shops_in_work + 1))
+    {
+        if (!CheckingAvailability(GroupTube))
         {
-            cout << "Число цехов в работе не может быть больше числа цехов" << endl;
-            edit_CS(t);
+            return;
         }
-        else { t.number_of_shops_in_work += 1; }
+        PrintObj(GroupTube);
         break;
-    default:
-        cout << "Ошибка, введите указанные выше значения" << endl;;
-        cin.clear();
-        cin.ignore(1000, '\n');
-        edit_CS(t);
+    }
+    case 2:
+    {
+        if (!CheckingAvailability(GroupCS))
+        {
+            return;
+        }
+        PrintObj(GroupCS);
         break;
+    }
+    case 3:
+    {
+        if (!CheckingAvailability(GroupTube) || (!CheckingAvailability(GroupCS)))
+        {
+            return;
+        }
+        cout << "Трубы: " << endl;
+        PrintObj(GroupTube);
+        cout << "Компрессорные станции: " << endl;
+        PrintObj(GroupCS);
+        break;
+    }
+    case 4:
+    {
+        string Name = "NoName";
+        unordered_map<int, int> IDs;
+
+        if (!CheckingAvailability(GroupCS))
+        {
+            return;
+        }
+
+        cout << endl;
+        Name = EnteringFragmentName();
+
+
+        FilterResults(GroupCS, IDs, CheckByName, Name);
+        break;
+    }
+    case 5:
+    {
+        double Effectiveness = 0;
+        unordered_map<int, int> IDs;
+
+        if (!CheckingAvailability(GroupCS))
+        {
+            return;
+        }
+
+
+        cout << "Введите процент незадействованных цехов (от 0 до 100): " << endl;
+        Effectiveness = CheckingValues(0., 100.);
+
+        FilterResults(GroupCS, IDs, CheckByEffectiveness, Effectiveness);
+        break;
+
+    }
     }
 }
 
-istream& operator >> (istream& in, CS& p)
+
+//Изменение объектов	
+template<typename T>
+using FilterEditing = void(*)(T&, unordered_set<int>&);
+//Поэлементное редактирование списка труб
+void Element_By_ElementEditingPipe(unordered_map<int, tube>& GroupP, unordered_set<int>& IDsP)
 {
-    cout << "Введите название КС: ";
-    getline(cin >> ws, p.name);
-    cout << "Введите число цехов: ";
-    p.number_of_shops = get_pozitive_number(1, 9999);
-    cout << "Введите число работающих цехов: ";
-    p.number_of_shops_in_work = get_pozitive_number(0, p.number_of_shops);
-    cout << "Введите эффективность: ";
-    p.efficiency = get_pozitive_number(0.0, 99999999.0);
-    return in;
+    for (const auto& elem : IDsP)
+    {
+        GroupP.at(elem).InputStatusCheck();
+    }
+}
+void Element_By_ElementEditingCs(unordered_map<int, cs>& GroupCs, unordered_set<int>& IDsP)
+{
+    for (const auto& elem : IDsP)
+    {
+        GroupCs.at(elem).EditingWorkshop();
+    }
+}
+//Пакетное редактирование статуса
+void BatchEditingPipes(unordered_map<int, tube>& GroupP, unordered_set<int>& IDsP)
+{
+    cout << "Введите новый статус трубы (в ремонте - 0, в работоспособном состоянии - 1)" << endl;
+    int Status = CheckingValues(0, 1);
+    for (const auto& elem : IDsP)
+    {
+        GroupP.at(elem).SetStatus(Status);
+    }
+}
+//Пакетное  удаление
+template<typename T>
+void BatchErasePipes(T& Obj, unordered_set<int>& IDsP)
+{
+    for (const auto& elem : IDsP)
+    {
+        Obj.erase(elem);
+    }
+}
+//Выбор действия с элементами
+template<typename T>
+void SelectingAnEditAction(T& Obj, unordered_set<int>& IDsP, FilterEditing<T> f)
+{
+    cout << endl << "Введите 1 для редактирования объектов или 0 для удаления." << endl;
+    int item = CheckingValues(0, 1);
+    switch (item)
+    {
+    case 1:
+        f(Obj, IDsP);
+        return;
+    case 0:
+        BatchErasePipes(Obj, IDsP);
+        return;
+    }
+}
+//Создание Set из всех элементов фильтра
+void SelectingAllFilterElements(unordered_map<int, int>& IDs, unordered_set<int>& IDsP)
+{
+    for (const auto& elem : IDs)
+    {
+        IDsP.emplace(elem.second);
+    }
+}
+//Что необходимо удалить или отредактировать 
+void EnteringIDChange(unordered_map<int, int>& IDs, unordered_set<int>& IDsP)
+{
+    int Number = 0;
+    cout << "Введите -1 для того, что бы выбрать все выведенные объекты" << endl
+        << "Или введите через Enter номера из списка интересующих вас объектов." << endl
+        << "Для завершения ввода введите 0" << endl;
+
+    Number = CheckingValues(-1, (int)IDs.size());
+    while (Number != 0 && Number != -1)
+    {
+        IDsP.emplace(IDs.at(Number));
+        Number = CheckingValues(0, (int)IDs.size());
+    }
+    if (Number == 0 && IDsP.size() == 0) { return; }
+    if (Number == -1) { SelectingAllFilterElements(IDs, IDsP); }
 }
 
-ostream& operator << (ostream& out, const CS& p)
+template<typename T>
+void InputAndCheckingAvailabilityID(unordered_map<int, T>& Obj, int& ID)
 {
-    out << "Название = " << p.name << endl
-        << "Число цехов = " << p.number_of_shops << endl
-        << "Число цехов в работе: " << p.number_of_shops_in_work << endl
-        << "Эффективность:" << p.efficiency << endl;
-    return out;
+    do
+    {
+        ID = CheckingValues(0, T::GetID());
+        if (ID == 0)
+            break;
+        else if (CheckingAvailabilityID(ID, Obj))
+            break;
+    } while (true);
+}
+//Ввод ID для дальнейшего редактирования
+template<typename T>
+void InputIDsP(unordered_map<int, T>& Obj, unordered_set<int>& IDsP)
+{
+    cout << "Введите через Enter ID объектов, которые нужно изменить." << endl
+        << "Для завершения ввода введите 0" << endl;
+    int ID;
+    InputAndCheckingAvailabilityID(Obj, ID);
+    while (ID != 0)
+    {
+        IDsP.emplace(ID);
+        InputAndCheckingAvailabilityID(Obj, ID);
+    }
+    cout << endl;
+}
+//Изменение объектов
+template<typename T>
+void ChangingObjectsPipe(unordered_map<int, tube>& GroupP, Filter<T, tube> f, T param)
+{
+    unordered_map<int, int> IDs;
+    FilterResults(GroupP, IDs, f, param);
+    unordered_set<int> IDsP;
+    EnteringIDChange(IDs, IDsP);
+
+    SelectingAnEditAction(GroupP, IDsP, BatchEditingPipes);
+}
+//Изменение объектов
+void ChangingObjects(unordered_map<int, tube>& GroupP, unordered_map<int, cs>& GroupCs)
+{
+    string Name = "NoName";
+    unordered_set<int> IDsObj;
+    bool Status = false;
+    int SizePipes = GroupP.size();
+    int SizeCs = GroupCs.size();
+    cout << "1. Редактирование по фильтру названия труб" << endl
+        << "2. Редактирование по фильтру статуса трубы" << endl
+        << "3. Редактирование по ID труб" << endl
+        << "4. Редактирование по ID КС" << endl
+        << "0. Для возврата в главное меню." << endl << endl;
+
+    int item = CheckingValues(0, 4);
+
+    switch (item)
+    {
+    case 1:
+        if (!CheckingAvailability(GroupP))
+        {
+            return;
+        }
+
+        cout << endl;
+        Name = EnteringFragmentName();
+
+        ChangingObjectsPipe(GroupP, CheckByName, Name);
+        return;
+
+    case 2:
+        if (!CheckingAvailability(GroupP))
+        {
+            return;
+        }
+
+        cout << endl;
+        cout << "Введите 1, если статус искомых труб 'В работе' или 0, если их статус 'В ремонте'" << endl;
+        Status = CheckingValues(0, 1);
+
+        ChangingObjectsPipe(GroupP, CheckByStatus, Status);
+
+        return;
+    case 3:
+        if (!CheckingAvailability(GroupP))
+        {
+            return;
+        }
+
+        InputIDsP(GroupP, IDsObj);
+        SelectingAnEditAction(GroupP, IDsObj, Element_By_ElementEditingPipe);
+        return;
+    case 4:
+        if (!CheckingAvailability(GroupCs))
+        {
+            return;
+        }
+
+        InputIDsP(GroupCs, IDsObj);
+        SelectingAnEditAction(GroupCs, IDsObj, Element_By_ElementEditingCs);
+        return;
+    case 0:
+        return;
+    }
+
+    return;
 }
 
-tube& select_tube(vector<tube> t)
+
+void consol()
 {
-    cout << "Введите индекс: ";
-    unsigned int index = get_pozitive_number(0u, t.size());
-    return t[index];
+    cout << "Меню:" << endl
+        << "1. Добавить трубу" << endl
+        << "2. Добавить КС" << endl
+        << "3. Просмотр объектов" << endl
+        << "4. Редактировать объекты" << endl
+        << "5. Сохранить" << endl
+        << "6. Загрузить" << endl
+        << "0. Выход" << endl
+        << "Введите номер пункта: ";
 }
 
 int main()
 {
-    setlocale(0, "");
-    tube t;
-    CS c;
-    //vector <tube> tubes;
-    vector <tube> tubes;
-    //vector <CS> CStations;
+    setlocale(LC_ALL, "rus");
+    vector <tube> GroupTube;
+    vector <cs> GroupCS;
+    unordered_map<int, tube> GroupTube1;
+    unordered_map<int, cs> GroupCS1;
+
     while (true)
     {
-        print_menu();
-        switch (get_pozitive_number(0, 7))
+        consol();
+        int i = CheckingValues(0, 9);
+
+        switch (i)
         {
         case 1:
         {
-            cin >> t;
-            tubes.push_back(t);
-            break; //Добавить трубу
+            tube NewTube;
+            cin >> NewTube;
+            GroupTube1.emplace(NewTube.MaxID, NewTube);
+            GroupTube.push_back(NewTube);
+            break;
         }
         case 2:
         {
-            cin >> c;
-            break; //Добавить КС
+            cs NewCS;
+            cin >> NewCS;
+            GroupCS1.emplace(NewCS.MaxID, NewCS);
+            GroupCS.push_back(NewCS);
+            break;
         }
         case 3:
         {
-            if (is_data_correct(t)) { cout << t << endl; }
-            //if (is_data_correct(t))     {cout << t << endl;}
-            if (is_data_correct(t)) { cout << select_tube(tubes) << endl; }
-            else { cout << "Трубы нет" << endl; }
-
-            if (is_data_correct(c)) { cout << c << endl; }
-            else { cout << "КС нет" << endl; }
-            break; //Просмотр объектов
+            OutPut(GroupTube1, GroupCS1);
+            break;
         }
         case 4:
         {
-            if (is_data_correct(t)) { edit_tube(t); }
-            //if (is_data_correct(t))     {edit_tube(t);}
-            if (is_data_correct(t)) { edit_tube(select_tube(tubes)); }
-            else { cout << "Трубы нет" << endl; }
-            break; //Редактировать трубу
+            ChangingObjects(GroupTube1, GroupCS1);
+            break;
         }
         case 5:
         {
-            if (is_data_correct(c)) { edit_CS(c); }
-            else { cout << "КС нет" << endl; }
-            break; //Редактировать КС
+            SaveAll(GroupTube1, GroupCS1);
+            break;
         }
         case 6:
         {
-            save(t, c);
-            break; //Сохранить
-        }
-        case 7:
-        {
-            load(t, c);
-            break; //Загрузить
+            LoadAll(GroupTube1, GroupCS1);
+            break;
         }
         case 0:
         {
-            return 0; //Выход
+            return 0;
         }
         default:
         {
-            cout << "Ошибка, введена несуществующая комманда" << endl;
+            cout << "Введите корректное значение пункта из меню:" << endl;
         }
         }
     }

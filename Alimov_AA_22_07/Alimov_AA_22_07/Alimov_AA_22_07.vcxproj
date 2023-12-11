@@ -128,6 +128,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Alimov_AA_22_07.cpp" />
+    <ClCompile Include="Checking.cpp" />
+    <ClCompile Include="cs.cpp" />
+    <ClCompile Include="OperatorOverloads.cpp" />
+    <ClCompile Include="tube.cpp" />
+    <ClCompile Include="WorkingWithFiles.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Checking.h" />
+    <ClInclude Include="cs.h" />
+    <ClInclude Include="OperatorOverloads.h" />
+    <ClInclude Include="tube.h" />
+    <ClInclude Include="WorkingWithFiles.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
